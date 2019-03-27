@@ -14,25 +14,32 @@ let stops = {};
 let rubus = {
 
     getStopPredictions: (stopTag, callback) => {
-        stops[stopTag].routes.forEach(r => {
-            doRequest(`${apiUrl}&command=predictions&r=${r}&s=${stopTag}`)
-            .then(function (data) {
-                if(data.body.predictions.length > 0){
-                    data = data.body.predictions[0]; 
+        stopTag = stopTag.replace(/_.+/, '');
+        let searchTags = Object.keys(stops).filter(s => {
+            return s.replace(/_.+/, '') == stopTag
+        });
 
-                    let predictionsAvalable = typeof data.direction == 'object' && data.direction.length > 0;
-                    if(predictionsAvalable){
-                        callback({
-                            agencyTitle: data.agencyTitle[0],
-                            routeTag: r,
-                            routeTitle: data.routeTitle[0],
-                            stopTitle: data.stopTitle[0],
-                            stopTag: stopTag,
-                            predictions: data.direction[0].prediction,
-                            direction: data.direction[0].title[0].replace(/\sStudent.+/,'')
-                        });
+        searchTags.forEach(tag => {
+            stops[tag].routes.forEach(r => {
+                doRequest(`${apiUrl}&command=predictions&r=${r}&s=${tag}`)
+                .then(function (data) {
+                    if(data.body.predictions && data.body.predictions.length > 0){
+                        data = data.body.predictions[0]; 
+
+                        let predictionsAvalable = typeof data.direction == 'object' && data.direction.length > 0;
+                        if(predictionsAvalable){
+                            callback({
+                                agencyTitle: data.agencyTitle[0],
+                                routeTag: r,
+                                routeTitle: data.routeTitle[0],
+                                stopTitle: data.stopTitle[0],
+                                stopTag: stopTag,
+                                predictions: data.direction[0].prediction,
+                                direction: data.direction[0].title[0].replace(/\sStudent.+/,'')
+                            });
+                        }
                     }
-                }
+                });
             });
         });
     },
@@ -117,24 +124,32 @@ let rubus = {
         });
         
         rubus.getRouteConfig((data) => {
-            data.forEach(r => {
 
+            let newStops = {};
+
+            data.forEach(r => {
                 r.stop.forEach(s => {
 
                     // stop tag
-                    let tag = s.tag;
-                    if(typeof stops[tag] == 'undefined') stops[tag] = {
-                        routes: [],
-                        tag: tag,
-                        title: s.title,
-                        lat: s.lat,
-                        lon: s.lon,
-                    };
+                    let tag = s.tag[0];
+                    if(typeof newStops[tag] == 'undefined'){
+                        newStops[tag] = {
+                            routes: [],
+                            tag: tag,
+                            title: s.title[0],
+                            lat: s.lat,
+                            lon: s.lon,
+                        };
+                    }
 
                     // add route to stop
-                    stops[tag].routes.push(r.tag);
+                    if(!newStops[tag].routes.includes(r.tag[0])){
+                        newStops[tag].routes.push(r.tag[0]);
+                    }
                 });
             });
+
+            stops = newStops;
 
             AsyncStorage.setItem('stops', JSON.stringify(stops));
             finish();
