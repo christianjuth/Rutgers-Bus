@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
+import { SplashScreen } from 'expo';
 
 let rubus = require('./rubus');
 
@@ -58,6 +59,7 @@ export default class App extends React.Component {
 
 
   componentDidMount() {
+    SplashScreen.preventAutoHide();
     AppState.addEventListener('change', this._handleAppStateChange);
   }
 
@@ -82,6 +84,7 @@ export default class App extends React.Component {
       this.setState({
         routes: routes
       });
+      SplashScreen.hide();
     });
   }
 
