@@ -32,8 +32,6 @@ let rubus = {
                 return a.length < b.length ? -1 : 1;
         });
 
-        console.log(searchTags);
-
         searchTags.forEach(tag => {
             stops[tag].routes.forEach(r => {
                 doRequest(`${apiUrl}&command=predictions&r=${r}&s=${tag}`)

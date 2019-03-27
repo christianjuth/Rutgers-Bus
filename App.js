@@ -10,7 +10,8 @@ export default class App extends React.Component {
     super(props);
 
     this.state = {
-      stop: 'scott',
+      stopTag: '',
+      stopTitle: '',
       routes: {},
       state: 'active'
     };
@@ -19,7 +20,7 @@ export default class App extends React.Component {
       this.checkLocation();
       setInterval(() => { 
         this.checkLocation();
-      }, 60000);
+      }, 45000);
     });
 
     // count down
@@ -43,10 +44,13 @@ export default class App extends React.Component {
         const loc = position.coords;
 
         let stop = rubus.getClosestStop(loc.latitude, loc.longitude);
-        this.setState({
-          stopTag: stop.tag,
-          stopTitle: stop.title
-        });
+        if(stop.tag != this.state.stopTag){
+          this.setState({
+            stopTag: stop.tag,
+            stopTitle: stop.title,
+            routes: {}
+          });
+        }
         
         this.refresh();
       },
@@ -97,12 +101,14 @@ export default class App extends React.Component {
             let text = key;
             let r = this.state.routes[key];
 
-            let s = r.predictions[0].seconds;
-            if(s < 60){
-              text += ' in ' + s + ' seconds';  
-            } else{
-              text += ' in ' + Math.round(s/60) + ' minutes';
-            } 
+            let s = r.predictions.map(p => {
+              if(p.seconds > 60)
+                return Math.round(p.seconds/60);
+              else
+                return '<1';
+            }).slice(0, 3).join(', ');
+
+            text += ' in ' + s + ' minutes';
 
             return (<View style={styles.route} key={key}>
                       <Text style={styles.routeTitle}>{text}</Text>
@@ -135,8 +141,11 @@ const styles = StyleSheet.create({
   },
 
   route: {
-    paddingTop: 20,
-    width: '100%'
+    paddingTop: 15,
+    paddingBottom: 15,
+    width: '100%',
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1
   },
 
   routeTitle: {
