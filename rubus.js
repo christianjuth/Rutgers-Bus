@@ -19,6 +19,21 @@ let rubus = {
             return s.replace(/_.+/, '') == stopTag
         });
 
+        // Longer bus tags are usually
+        // the weekend route. Sorting
+        // based on day of week is an
+        // attempt to speed up search.
+        let today = new Date(),
+            isWeekend = (today.getDay() == 6 || today.getDay() == 0);
+        searchTags.sort((a,b) => {
+            if(isWeekend)
+                return a.length > b.length ? -1 : 1;
+            if(isWeekend)
+                return a.length < b.length ? -1 : 1;
+        });
+
+        console.log(searchTags);
+
         searchTags.forEach(tag => {
             stops[tag].routes.forEach(r => {
                 doRequest(`${apiUrl}&command=predictions&r=${r}&s=${tag}`)
