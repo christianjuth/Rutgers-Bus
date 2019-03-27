@@ -106,8 +106,13 @@ let rubus = {
         AsyncStorage.getItem('stops')
         .then(data => {
             if(Object.keys(stops).length == 0){
-                stops = JSON.parse(data);
-                finish();
+                try{
+                    stops = JSON.parse(data);
+                    if(Object.keys(stops).length > 0){
+                        finish();
+                    }
+                } catch(e) {};
+                
             }
         });
         
