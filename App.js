@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { AppState, StyleSheet, Text, View } from 'react-native';
 
 let rubus = require('./rubus');
 
@@ -10,7 +10,8 @@ export default class App extends React.Component {
 
     this.state = {
       stop: 'scott',
-      routes: {}
+      routes: {},
+      state: 'active'
     };
 
     rubus.load(() => {
@@ -55,8 +56,24 @@ export default class App extends React.Component {
     );
   }
 
-  refresh() {
 
+  componentDidMount() {
+    AppState.addEventListener('change', this._handleAppStateChange);
+  }
+
+  componentWillUnmount() {
+    AppState.removeEventListener('change', this._handleAppStateChange);
+  }
+
+  _handleAppStateChange = (nextAppState) => {
+    if(nextAppState == 'active' && this.state.state != 'active') this.refresh();
+    this.setState({
+      state: nextAppState
+    });
+  };
+
+
+  refresh() {
     rubus.getStopPredictions(this.state.stopTag, (data) => {
       let routes = this.state.routes;
 

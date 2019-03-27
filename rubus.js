@@ -1,6 +1,8 @@
 const   request   =     require('react-native-axios'),
         x2j       =     require('react-native-xml2js'),
-        parser    =     new x2j.Parser({mergeAttrs: true})
+        parser    =     new x2j.Parser({mergeAttrs: true});
+
+import { AsyncStorage } from "react-native";
 
 
 
@@ -94,6 +96,21 @@ let rubus = {
 
 
     load: (callback) => {
+
+        let finished = false,
+            finish = () => {
+                if(!finished) callback();
+                finished = true;
+            }
+
+        AsyncStorage.getItem('stops')
+        .then(data => {
+            if(Object.keys(stops).length == 0){
+                stops = JSON.parse(data);
+                finish();
+            }
+        });
+        
         rubus.getRouteConfig((data) => {
             data.forEach(r => {
 
@@ -114,7 +131,8 @@ let rubus = {
                 });
             });
 
-            callback();
+            AsyncStorage.setItem('stops', JSON.stringify(stops));
+            finish();
         });
     }
 }
