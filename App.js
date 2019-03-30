@@ -1,5 +1,5 @@
 import React from 'react';
-import { YellowBox, AppState, StyleSheet, Text, View } from 'react-native';
+import { YellowBox, ScrollView, AppState, StyleSheet, Text, View } from 'react-native';
 import { SplashScreen } from 'expo';
 YellowBox.ignoreWarnings(['Require cycle:']);
 
@@ -92,10 +92,10 @@ export default class App extends React.Component {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>{this.state.stopTitle}</Text>
+        <ScrollView style={styles.scroll}>
         {
           Object.keys(this.state.arrivals).map((key) => {
             let r = this.state.arrivals[key];
-            let text = r.name;
 
             let s = r.estimates.map(ms => {
               let seconds = Math.round(ms/1000);
@@ -105,14 +105,16 @@ export default class App extends React.Component {
                 return '<1';
             }).slice(0, 3).join(', ');
 
-            text += ' in ' + s + ' minutes';
+            let text = 'In ' + s + ' minutes';
 
             return (<View style={styles.route} key={key}>
+                      <Text style={styles.routeTitle}>{r.name}</Text>
                       <Text style={styles.routeTitle}>{text}</Text>
                       <Text style={styles.routeInfo}>{r.destination}</Text>
                     </View>);
           })
         }
+        </ScrollView>
       </View>
     );
   }
@@ -137,6 +139,10 @@ const styles = StyleSheet.create({
     textAlign: 'center'
   },
 
+  scroll: {
+    width: '100%'
+  },
+
   route: {
     paddingTop: 15,
     paddingBottom: 15,
@@ -147,12 +153,12 @@ const styles = StyleSheet.create({
 
   routeTitle: {
     fontSize: 20,
+    paddingBottom: 4,
     width: '100%',
     textAlign: 'center'
   },
 
   routeInfo: {
-    paddingTop: 5,
     fontSize: 14,
     width: '100%',
     textAlign: 'center',
