@@ -1,8 +1,10 @@
 import React from 'react';
-import { AppState, StyleSheet, Text, View } from 'react-native';
+import { YellowBox, AppState, StyleSheet, Text, View } from 'react-native';
 import { SplashScreen } from 'expo';
+YellowBox.ignoreWarnings(['Require cycle:']);
 
-let rubus = require('./rubus');
+let transloc = require('./transloc.js');
+let session = new transloc(require('./transloc-config').apiKey);
 
 
 export default class App extends React.Component {
@@ -10,13 +12,13 @@ export default class App extends React.Component {
     super(props);
 
     this.state = {
-      stopTag: '',
+      stopId: '',
       stopTitle: '',
-      routes: {},
+      arrivals: {},
       state: 'active'
     };
 
-    rubus.load(() => {
+    session.load(() => {
       this.checkLocation();
       setInterval(() => { 
         this.checkLocation();
@@ -25,14 +27,13 @@ export default class App extends React.Component {
 
     // count down
     setInterval(() => {
-      Object.keys(this.state.routes).forEach(r => {
-        this.state.routes[r].predictions = this.state.routes[r].predictions.map(p => {
-          p.seconds = p.seconds - 1;
-          return p;
-        }).filter(r => r.seconds >= 1);
+      Object.keys(this.state.arrivals).forEach(r => {
+        this.state.arrivals[r].estimates = this.state.arrivals[r].estimates.map(p => {
+          return p - 1000;
+        }).filter(r => r > 0);
       });
 
-      if(Object.keys(this.state.routes).length > 0){
+      if(Object.keys(this.state.arrivals).length > 0){
         this.setState(this.state);
       }
     }, 1000);
@@ -43,12 +44,11 @@ export default class App extends React.Component {
       position => {
         const loc = position.coords;
 
-        let stop = rubus.getClosestStop(loc.latitude, loc.longitude);
-        if(stop.tag != this.state.stopTag){
+        let stop = session.closestStop(loc.latitude, loc.longitude);
+        if(stop.stop_id != this.state.stopId){
           this.setState({
-            stopTag: stop.tag,
-            stopTitle: stop.title,
-            routes: {}
+            stopId: stop.stop_id,
+            stopTitle: stop.name
           });
         }
         
@@ -57,7 +57,7 @@ export default class App extends React.Component {
       error => {
         console.log(error.message);
       },
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 20000 }
     );
   }
 
@@ -80,13 +80,9 @@ export default class App extends React.Component {
 
 
   refresh() {
-    rubus.getStopPredictions(this.state.stopTag, (data) => {
-      let routes = this.state.routes;
-
-      routes[data.routeTitle] = data;
-
+    session.arrivalEstimates(this.state.stopId, (data) => {
       this.setState({
-        routes: routes
+        arrivals: data
       });
       SplashScreen.hide();
     });
@@ -97,13 +93,14 @@ export default class App extends React.Component {
       <View style={styles.container}>
         <Text style={styles.title}>{this.state.stopTitle}</Text>
         {
-          Object.keys(this.state.routes).map((key) => {
-            let text = key;
-            let r = this.state.routes[key];
+          Object.keys(this.state.arrivals).map((key) => {
+            let r = this.state.arrivals[key];
+            let text = r.name;
 
-            let s = r.predictions.map(p => {
-              if(p.seconds > 60)
-                return Math.round(p.seconds/60);
+            let s = r.estimates.map(ms => {
+              let seconds = Math.round(ms/1000);
+              if(seconds > 60)
+                return Math.round(seconds/60);
               else
                 return '<1';
             }).slice(0, 3).join(', ');
@@ -112,7 +109,7 @@ export default class App extends React.Component {
 
             return (<View style={styles.route} key={key}>
                       <Text style={styles.routeTitle}>{text}</Text>
-                      <Text style={styles.routeInfo}>{r.direction}</Text>
+                      <Text style={styles.routeInfo}>{r.destination}</Text>
                     </View>);
           })
         }
@@ -155,7 +152,7 @@ const styles = StyleSheet.create({
   },
 
   routeInfo: {
-    paddingTop: 2,
+    paddingTop: 5,
     fontSize: 14,
     width: '100%',
     textAlign: 'center',
